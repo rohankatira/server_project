@@ -4,105 +4,97 @@ const path = require("path");
 
 const PORT = 8083;
 
-const requestHandler = (req, res) => {
+const contentTypes = {
+  ".html": "text/html",
+  ".css": "text/css",
+  ".js": "application/javascript",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+  ".eot": "application/vnd.ms-fontobject",
+  ".otf": "font/otf",
+};
+
+const server = http.createServer((req, res) => {
+  let url = req.url.split("?")[0]; // Remove query params
   let filePath = "";
-  let extname = path.extname(req.url);
-  if (extname) {
-    const cleanUrl = req.url.split("?")[0];
-    filePath = path.join(__dirname, cleanUrl);
-  } else {
-    switch (req.url) {
-      case "/":
-      case "/index.html":
-        filePath = path.join(__dirname, "index.html");
-        break;
-      case "/about":
-      case "/about.html":
-        filePath = path.join(__dirname, "about.html");
-        break;
-      case "/properties":
-      case "/properties.html":
-        filePath = path.join(__dirname, "properties.html");
-        break;
-      case "/services":
-      case "/services.html":
-        filePath = path.join(__dirname, "services.html");
-        break;
-      case "/agents":
-      case "/agents.html":
-        filePath = path.join(__dirname, "agents.html");
-        break;
-      case "/blog":
-      case "/blog.html":
-        filePath = path.join(__dirname, "blog.html");
-        break;
-      case "/property-details":
-      case "/property-details.html":
-        filePath = path.join(__dirname, "property-details.html");
-        break;
-      case "/service-details":
-      case "/service-details.html":
-        filePath = path.join(__dirname, "service-details.html");
-        break;
-      case "/agent-profile":
-      case "/agent-profile.html":
-        filePath = path.join(__dirname, "agent-profile.html");
-        break;
-      case "/blog-details":
-      case "/blog-details.html":
-        filePath = path.join(__dirname, "blog-details.html");
-        break;
-      case "/terms":
-      case "/terms.html":
-        filePath = path.join(__dirname, "terms.html");
-        break;
-      case "/privacy":
-      case "/privacy.html":
-        filePath = path.join(__dirname, "privacy.html");
-        break;
-      case "/contact":
-      case "/contact.html":
-        filePath = path.join(__dirname, "contact.html");
-        break;
-      default:
+  let ext = path.extname(url).toLowerCase();
+
+  switch (url) {
+    case "/":
+    case "/index.html":
+      filePath = path.join(__dirname, "index.html");
+      ext = ".html";
+      break;
+
+    case "/about":
+    case "/about.html":
+      filePath = path.join(__dirname, "about.html");
+      ext = ".html";
+      break;
+
+    case "/properties":
+    case "/properties.html":
+      filePath = path.join(__dirname, "properties.html");
+      ext = ".html";
+      break;
+
+    case "/services":
+    case "/services.html":
+      filePath = path.join(__dirname, "services.html");
+      ext = ".html";
+      break;
+
+    case "/agents":
+    case "/agents.html":
+      filePath = path.join(__dirname, "agents.html");
+      ext = ".html";
+      break;
+
+    case "/blog":
+    case "/blog.html":
+      filePath = path.join(__dirname, "blog.html");
+      ext = ".html";
+      break;
+
+    case "/contact":
+    case "/contact.html":
+      filePath = path.join(__dirname, "contact.html");
+      ext = ".html";
+      break;
+
+    // Add more cases for your pages here
+
+    default:
+      // For anything else (like CSS, images, fonts), try to serve the file directly
+      filePath = path.join(__dirname, url);
+      if (!ext) {
+        // If no extension, serve 404 page
         filePath = path.join(__dirname, "404.html");
-    }
+        ext = ".html";
+      }
   }
 
-  const contentTypeMap = {
-    ".html": "text/html",
-    ".css": "text/css",
-    ".js": "application/javascript",
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".svg": "image/svg+xml",
-    ".ico": "image/x-icon",
-    ".woff": "font/woff",
-    ".woff2": "font/woff2",
-    ".ttf": "font/ttf",
-    ".eot": "application/vnd.ms-fontobject",
-    ".otf": "font/otf",
-    ".json": "application/json"
-  };
+  const contentType = contentTypes[ext] || "application/octet-stream";
 
-  const contentType = contentTypeMap[extname.toLowerCase()] || "application/octet-stream";
-
-  fs.readFile(filePath, (err, content) => {
+  fs.readFile(filePath, (err, data) => {
     if (err) {
-      // File not found or other error -> send 404 page
-      fs.readFile(path.join(__dirname, "404.html"), (error404, content404) => {
+      // If error reading file, serve 404.html
+      fs.readFile(path.join(__dirname, "404.html"), (err404, data404) => {
         res.writeHead(404, { "Content-Type": "text/html" });
-        res.end(content404 || "404 Not Found");
+        res.end(data404 || "404 Not Found");
       });
     } else {
       res.writeHead(200, { "Content-Type": contentType });
-      res.end(content);
+      res.end(data);
     }
   });
-};
-
-const server = http.createServer(requestHandler);
+});
 
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
